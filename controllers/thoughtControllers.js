@@ -1,143 +1,144 @@
 // import models
-const {User, Thought} = require('../models');
+const { Thought, User } = require('../models');
 
-// export all controllers
-module.exports = {
+// create a model for exports
+const thoughtController = {
+
     // GET all thoughts
     getThoughts(req, res) {
-        try {
-            const thoughts = Thought.find();
-            res.json(thoughts);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
+        Thought.find()
+            .sort({ createdAt: -1 })
+            .then((thoughts) => {
+                res.json(thoughts);
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
     // GET a single thought by _id
     getSingleThought(req, res) {
-        try {
-            const thought = Thought.findOne({_id: req.params.thoughtID});
-
-            if (!thought) {
-                return res.status(404).json({message: 'No thought with that ID'});
-            }
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
+        Thought.findOne({ _id: req.params.thoughtId })
+            .then((thought) => {
+                if (!thought) {
+                    return res.status(404).json({ message: 'Thought with this ID does not exist.' });
+                }
+                res.json(thought);
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
     // POST/CREATE a new thought
     // push thought to associated user's thoughts
     createThought(req, res) {
-        try {
-            const thoughtData = Thought.create(req.body);
-            User.findOneAndUpdate(
-                {_id: req.params.userId},
-                {$push: {thoughts: _id}},
-                {new: true}
-            );
+        Thought.create(req.body)
+            .then((ThoughtData) => {
+                return User.findOneAndUpdate(
+                    { _id: req.body.userId },
+                    { $push: { thoughts: ThoughtData._id } },
+                    { new: true }
+                );
+            })
+            .then((dbUserData) => {
+                if (!dbUserData) {
+                    return res.status(404).json({ message: 'Thought has been created but no user with this id!' });
+                }
 
-            res.json(thoughtData);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
+                res.json({ message: 'Thought has been created!' });
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
-    // PUT/UPDATE a thought by _id
+    // POST/UPDATE thought by _id
     updateThought(req, res) {
-        try {
-            const updatedThought = Thought.findOneAndUpdate(
-                {_id: req.params.thoughtId},
-                {$set: req.body},
-                {
-                    runValidators: true,
-                    new: true
+        Thought.findOneAndUpdate({ _id: req.params.thoughtId }, { $set: req.body }, { runValidators: true, new: true })
+            .then((updatedThought) => {
+                if (!updatedThought) {
+                    return res.status(404).json({ message: 'Thought with this ID does not exist.' });
                 }
-            );
-
-            if (!updatedThought) {
-                return res.status(404).json({message: 'No thought with that ID'});
-            }
-
-            res.json(updatedThought);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
+                res.json(updatedThought);
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
     // DELETE thought by _id
     // pull from user's thoughts
     deleteThought(req, res) {
-        try {
-            const deletedThought = Thought.findOneAndDelete({_id: req.params.thoughtId});
+        Thought.findOneAndRemove({ _id: req.params.thoughtId })
+            .then((deletedThought) => {
+                if (!deletedThought) {
+                    return res.status(404).json({ message: 'Thought with this ID does not exist.' });
+                }
 
-            if (!deletedThought) {
-                return res.status(404).json({message: 'No thought with that ID'});
-            }
-
-            const updatedUser = User.findOneAndUpdate(
-                {thought: req.params.thoughtId},
-                {$pull: {thoughts: req.params.thoughtId}},
-                {new: true}
-            );
-
-            res.json(deletedThought, updatedUser);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
+                // pull thought from user's thoughts array
+                return User.findOneAndUpdate(
+                    { thoughts: req.params.thoughtId },
+                    { $pull: { thoughts: req.params.thoughtId } },
+                    { new: true }
+                );
+            })
+            .then((updatedUser) => {
+                if (!updatedUser) {
+                    return res.status(404).json({ message: 'Thought has been deleted but no user with this id!' });
+                }
+                res.json({ message: 'Thought has been deleted!' });
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
     // POST/CREATE reaction to a thought
     // by updating a thought
     createReaction(req, res) {
-        try {
-            const newReaction = Thought.findOneAndUpdate(
-                {_id: req.params.thoughtId},
-                {$addToSet: {reactions: req.body}},
-                {
-                    runValidators: true,
-                    new: true
+        Thought.findOneAndUpdate(
+            { _id: req.params.thoughtId },
+            { $addToSet: { reactions: req.body } },
+            { runValidators: true, new: true }
+        )
+            .then((newReaction) => {
+                if (!newReaction) {
+                    return res.status(404).json({ message: 'User with this ID does not exist.' });
                 }
-            );
-
-            if (!newReaction) {
-                return res.status(404).json({message: 'No thought with that ID'});
-            }
-
-            res.json(newReaction);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
-
+                res.json(newReaction);
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
     },
 
-    // DELETE a reaction by reactionId
+    // DELETE reaction by reactionId
     // by updating a thought
     deleteReaction(req, res) {
-        try {
-            const thought = Thought.findOneAndUpdate(
-                {_id: req.params.thoughtId},
-                {$pull: {reactions: {reactionId: req.params.reactionId}}},
-                {
-                    runValidators: true,
-                    new: true
+        Thought.findOneAndUpdate(
+            { _id: req.params.thoughtId },
+            { $pull: { reactions: { reactionId: req.params.reactionId } } },
+            { runValidators: true, new: true }
+        )
+            .then((thought) => {
+                if (!thought) {
+                    return res.status(404).json({ message: 'Thought with this ID does not exist.' });
                 }
-            );
-
-            if (!thought) {
-                return res.status(404).json({message: 'No thought with that ID'});
-            }
-
-            res.json(thought);
-        }
-        catch (error) {
-            res.status(500).json(error);
-        }
-    }
+                res.json(thought);
+            })
+            .catch((err) => {
+                console.log(err);
+                res.status(500).json(err);
+            });
+    },
 };
+
+// export the module containing the controllers
+module.exports = thoughtController;

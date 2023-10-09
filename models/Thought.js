@@ -1,42 +1,47 @@
-// import mongoose modules
-const {Schema, model} = require('mongoose');
-
-// import moment for timestamps
+// import packages
+const { Schema, model } = require('mongoose');
+// use moment for timestamps
 const moment = require('moment');
 
-// require reactionSchema
+// import reaction schema
 const reactionSchema = require('./Reaction');
 
-// thought schema
-const thoughtSchema = new Schema({
-    thoughtText: {
-        type: String,
-        required: true,
-        minlength: 1,
-        maxlength: 200
+//  define thought schema
+const thoughtSchema = new Schema(
+    {
+        thoughtText: {
+            type: String,
+            required: 'A thought is required',
+            minlength: 1,
+            maxlength: 280,
+        },
+        createdAt: {
+            type: Date,
+            default: Date.now,
+            get: (time) => moment(time).format('MMM/DD/YYYY [at] hh:mm a'),
+        },
+        username: {
+            type: String,
+            required: true,
+        },
+        reactions: [reactionSchema],
     },
-    createdAt: {
-        type: Date,
-        default: Date.now,
-        get: (time) => moment(time).format('MMM/DD/YYYY [at] hh:mm a')
-    },
-    username: {
-        type: String,
-        required: true
-    },
-    reactions: [reactionSchema]
-},
-{
-    toJSON: {
-        getters: true,
-        virtuals: true
-    },
-    id: false
+    {
+        toJSON: {
+            getters: true,
+        },
+        id: false,
+    }
+);
+
+// virtual reactionCount that gets the number of reactions
+thoughtSchema.virtual('reactionCount').get(function () {
+    return this.reactions.length;
 });
 
-// virtual property for reactionCount
-thoughtSchema.virtual('reactionCount').get(() => {return this.reactions.length;});
+// create model from userSchema
+const Thought = model('Thought', thoughtSchema);
 
 // export model
-const Thought = model('Thought', thoughtSchema);
 module.exports = Thought;
+
