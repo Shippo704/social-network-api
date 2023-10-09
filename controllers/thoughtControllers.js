@@ -47,8 +47,8 @@ const thoughtController = {
                 return User.findOneAndUpdate(
                     // find by id
                     { _id: req.body.userId },
-                    // pust new thought into thoughts array
-                    { $push: { thoughts: thoughtData._id } },
+                    // push new thought into thoughts array
+                    { $addToSet: { thoughts: thoughtData._id } },
                     { new: true }
                 );
             })
