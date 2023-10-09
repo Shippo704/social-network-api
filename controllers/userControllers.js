@@ -4,9 +4,9 @@ const {User, Thought} = require('../models');
 // export all controllers
 module.exports = {
     // GET all users
-    async getUsers(req, res) {
+    getUsers(req, res) {
         try {
-            const users = await User.find();
+            const users = User.find();
             res.json(users);
         }
         catch (error) {
@@ -15,9 +15,9 @@ module.exports = {
     },
 
     // GET a single user by _id
-    async getSingleUser(req, res) {
+    getSingleUser(req, res) {
         try {
-            const user=await User.findOne({_id: req.params.userId}).select('-__v');
+            const user= User.findOne({_id: req.params.userId}).select('-__v');
 
             if (!user) {
                 return res.status(404).json({message: 'No user with that ID'});
@@ -31,10 +31,10 @@ module.exports = {
     },
 
     // POST/CREATE new user
-    async createUser(req, res) {
+    createUser(req, res) {
         try {
-            const userData = await User.create(req.body);
-            res.json(userData);
+            const userData = User.create(req.body);
+            res.status(200).json(userData);
         }
         catch (err) {
             res.status(500).json(err);
@@ -42,9 +42,9 @@ module.exports = {
     },
 
     // PUT/UPDATE user by _id
-    async updateUser(req, res) {
+    updateUser(req, res) {
         try {
-            const updatedUser = await User.findOneAndUpdate(
+            const updatedUser = User.findOneAndUpdate(
                 { _id: req.params.userId },
                 { $set: req.body },
                 {
@@ -67,15 +67,15 @@ module.exports = {
 
     // DELETE user by _id
     // and remove associated thoughts
-    async deleteUser(req, res) {
+    deleteUser(req, res) {
         try {
-            const deletedUser = await User.findOneAndDelete({_id: req.params.userId});
+            const deletedUser = User.findOneAndDelete({_id: req.params.userId});
 
             if (!deletedUser) {
                 return res.status(404).json({message: 'No user with that ID'});
             }
 
-            const deletedThoughts = await Thought.deleteMany({_id: {$in: deletedUser.thoughts}});
+            const deletedThoughts = Thought.deleteMany({_id: {$in: deletedUser.thoughts}});
 
             res.json(deletedUser, deletedThoughts);
         }
@@ -85,9 +85,9 @@ module.exports = {
     },
 
     // PUT/ADD friend
-    async addFriend(req, res) {
+    addFriend(req, res) {
         try {
-            const user = await User.findOneAndUpdate(
+            const user = User.findOneAndUpdate(
                 {_id: req.params.id},
                 {$addToSet: {friends: req.params.friendId}},
                 {new: true}
@@ -106,9 +106,9 @@ module.exports = {
 
     // DELETE friend
     // by PUT/UPDATE a user
-    async deleteFriend(req, res) {
+    deleteFriend(req, res) {
         try {
-            deletedFriend = await User.findOneAndUpdate(
+            deletedFriend = User.findOneAndUpdate(
                 {_id: req.params.id},
                 {$pull: {friends: req.params.friendId}},
                 {new: true}
