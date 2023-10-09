@@ -1,6 +1,7 @@
 // import models
 const {User, Thought} = require('../models');
 
+// export all controllers
 module.exports = {
     // GET all users
     async getUsers(req, res) {
@@ -52,8 +53,8 @@ module.exports = {
                 }
             )
     
-            if (!user) {
-                res.status(404).json({message: 'No user with that ID'});
+            if (!updatedUser) {
+                 return res.status(404).json({message: 'No user with that ID'});
             }
     
             res.json(updatedUser);
@@ -70,8 +71,8 @@ module.exports = {
         try {
             const deletedUser = await User.findOneAndDelete({_id: req.params.userId});
 
-            if (!user) {
-                res.status(404).json({message: 'No user with that ID'});
+            if (!deletedUser) {
+                return res.status(404).json({message: 'No user with that ID'});
             }
 
             const deletedThoughts = await Thought.deleteMany({_id: {$in: deletedUser.thoughts}});
@@ -81,12 +82,47 @@ module.exports = {
         catch (error) {
             res.status(500).json(error);
         }
+    },
+
+    // PUT/ADD friend
+    async addFriend(req, res) {
+        try {
+            const user = await User.findOneAndUpdate(
+                {_id: req.params.id},
+                {$addToSet: {friends: req.params.friendId}},
+                {new: true}
+                );
+    
+            if (!user) {
+                return res.status(404).json({message: 'Ne user with that ID'});
+            }
+    
+            res.json(user);
+        }
+        catch {error} {
+            res.status(500).json(error);
+        }
+    },
+
+    // DELETE friend
+    // by PUT/UPDATE a user
+    async deleteFriend(req, res) {
+        try {
+            deletedFriend = await User.findOneAndUpdate(
+                {_id: req.params.id},
+                {$pull: {friends: req.params.friendId}},
+                {new: true}
+            );
+
+            if (!deletedFriend) {
+                return res.status(404).json({message: 'No user with that ID'});
+            }
+
+            res.json(deletedFriend);
+        }
+        catch (error) {
+            res.status(500).json(error);
+        }
     }
-
-
-
-
-
-
-}
+};
 
